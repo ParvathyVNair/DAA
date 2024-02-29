@@ -1,0 +1,81 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Structure to represent a point
+typedef struct Point {
+  int x;
+  int y;
+} Point;
+
+// Function to compare points based on their polar angles
+int compare(const void *a, const void *b) {
+  Point *p1 = (Point *)a;
+  Point *p2 = (Point *)b;
+
+  // Special case: handle points with the same x-coordinate
+  if (p1->x == p2->x) {
+    return p1->y - p2->y;
+  }
+
+  // Calculate the slope of the line connecting the reference point (origin) and each point
+  double slope1 = (double)p1->y / p1->x;
+  double slope2 = (double)p2->y / p2->x;
+
+  // Sort based on polar angles (clockwise order)
+  return (slope1 < slope2) ? -1 : 1;
+}
+
+// Function to check if a point is on the left side of the line formed by two other points
+int isLeft(Point p0, Point p1, Point p2) {
+  return (p1.x - p0.x) * (p2.y - p1.y) - (p2.x - p1.x) * (p1.y - p0.y) > 0;
+}
+
+// Function to find the convex hull of a set of points
+void findConvexHull(Point points[], int n, Point hull[]) {
+  // 1. Sort points by their polar angles (origin as reference)
+  qsort(points, n, sizeof(Point), compare);
+
+  // 2. Handle degenerate cases (less than 3 points)
+  if (n < 3) {
+    for (int i = 0; i < n; i++) {
+      hull[i] = points[i];
+    }
+    return;
+  }
+
+  // 3. Build the convex hull using Graham Scan
+  int hull_index = 0;
+  for (int i = 0; i < n; i++) {
+    // Maintain a stack of points with the property that the last three points in the stack are always a counter-clockwise turn
+    while (hull_index >= 2 && !isLeft(hull[hull_index - 2], hull[hull_index - 1], points[i])) {
+      hull_index--;
+    }
+    hull[hull_index++] = points[i];
+  }
+
+  // 4. Add remaining points in the reverse order (lower hull)
+  for (int i = n - 2; i >= 0; i--) {
+    while (hull_index >= 2 && !isLeft(hull[hull_index - 2], hull[hull_index - 1], points[i])) {
+      hull_index--;
+    }
+    hull[hull_index++] = points[i];
+  }
+}
+
+int main() {
+  // Example set of points
+  Point points[] = {{1, 1}, {2, 2}, {4, 4}, {4, 0}, {0, 0}, {1, 0}};
+  int n = sizeof(points) / sizeof(points[0]);
+
+  // Find the convex hull
+  Point hull[n];
+  findConvexHull(points, n, hull);
+
+  // Print the convex hull points
+  printf("Convex Hull Points:\n");
+  for (int i = 0; i < n; i++) {
+    printf("(%d, %d)\n", hull[i].x, hull[i].y);
+  }
+
+  return 0;
+}
